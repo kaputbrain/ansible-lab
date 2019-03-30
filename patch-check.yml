@@ -1,21 +1,23 @@
 ---
-- name: Checking OS and package manager
-  fail:
-    msg: "This script only updates CentOS or RHEL systems"
-  when: ansible_os_family != "RedHat" and ansible_pkg_mgr != "yum"
+- hosts: all
+  tasks:
+  - name: Checking OS and package manager
+    fail:
+      msg: "This script only updates CentOS or RHEL systems"
+    when: ansible_os_family != "RedHat" and ansible_pkg_mgr != "yum"
 
-- name: Gathering any updates
-  yum:
-    list: updates
-    update_cache: yes
-  register: yumoutput
+  - name: Gathering any updates
+    yum:
+      list: updates
+      update_cache: yes
+    register: yumoutput
 
-- name: Is the system clean
-  debug:
-    msg: "System clean"
-  when: yumoutput.results |length == 0
+  - name: Is the system clean
+    debug:
+      msg: "System clean"
+    when: yumoutput.results |length == 0
 
-- name: Display number of patches
-  debug:
-    msg: "Patches {{ yumoutput.results | length }}"
-  when: yumoutput.results |length > 0
+  - name: Display number of patches
+    debug:
+      msg: "Patches {{ yumoutput.results | length }}"
+    when: yumoutput.results |length > 0
