@@ -1,0 +1,49 @@
+---
+- hosts: all
+  tasks:
+  - name: Checking OS and package manager
+    fail:
+      msg: "This script only updates CentOS or RHEL systems"
+    when: ansible_os_family != "RedHat" and ansible_pkg_mgr != "yum"
+
+  - name: Gathering any updates
+    yum:
+      list: updates
+      update_cache: yes
+    register: yumoutput
+
+  - name: Is the system clean
+    debug:
+      msg: "System clean"
+    when: yumoutput.results |length == 0
+
+  - name: Display number of patches
+    debug:
+      msg: "Patches {{ yumoutput.results | length }}"
+    when: yumoutput.results |length > 0
+
+  - name: Update the system
+    yum:
+      name: '*'
+      state: latest
+    when: yumoutput.results |length > 0
+
+  - name: Checking if Kernel patched
+    shell: |
+      LAST_KERNEL=$(rpm -q --last kernel |awk 'NR==1{sub(/^kernel-/,""); print $1}' |head -1)
+      CURRENT_KERNEL=$(uname -r)
+  
+      if [[ $LAST_KERNEL != $CURRENT_KERNEL ]]; then
+        echo "YES"
+      else
+        echo "NO"
+      fi
+    register: reboot_needed
+
+  - name: Display if reboot needed
+    debug:
+      msg: "Reboot needed = {{ reboot_needed.stdout }}"
+
+  - name: Rebooting system
+    reboot:
+    when: reboot_needed.stdout == "YES"
